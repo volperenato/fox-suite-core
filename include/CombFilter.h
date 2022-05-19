@@ -6,6 +6,7 @@ class CombFilter : public Delay
 protected:
 	float cf_feedbackGain;
 	float cf_decayInSeconds;
+	int   cf_feedbackGainSign;
 public:
 	CombFilter();
 	~CombFilter();

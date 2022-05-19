@@ -6,8 +6,9 @@
 
 CombFilter::CombFilter() : Delay()
 {
-	cf_feedbackGain = 0.0;
-	cf_decayInSeconds = 0.0;
+	cf_feedbackGain     = 0.0;
+	cf_decayInSeconds   = 0.0;
+	cf_feedbackGainSign = 1;
 }
 
 
@@ -23,8 +24,11 @@ void CombFilter::setFeedbackFromDecay(float decayInSeconds)
 	// set decay
 	cf_decayInSeconds = decayInSeconds;
 	
-	// compute comb filter gain. Decay value must be in seconds
-	cf_feedbackGain = pow(10, -3 * dly_delayInmsec / (cf_decayInSeconds * 1000));
+	// compute comb filter gain module according to given decay value (in seconds)
+	float feedbackModule = pow(10, -3 * dly_delayInmsec / (cf_decayInSeconds * 1000));
+
+	// allocate comb filter gain value retaining its sign
+	cf_feedbackGain = cf_feedbackGainSign * feedbackModule;
 }
 
 float CombFilter::processAudio(float xn)
@@ -47,14 +51,12 @@ float CombFilter::processAudio(float xn)
 
 void CombFilter::setFeedbackToNegative()
 {
-	if (cf_feedbackGain > 0)
-		cf_feedbackGain *= -1;
+	cf_feedbackGainSign = -1;
 }
 
 void CombFilter::setFeedbackToPositive()
-{
-	if (cf_feedbackGain < 0)
-		cf_feedbackGain *= -1;
+{	
+	cf_feedbackGainSign = 1;
 }
 
 

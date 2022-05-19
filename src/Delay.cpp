@@ -87,6 +87,10 @@ void Delay::updateParameters()
 	// define delay size in samples
 	dly_delayInSamples = dly_delayInmsec * (float)dly_sampleRate / 1000;
 
+	// protection against a 0 samples delay
+	if (dly_delayInSamples == 0)
+		dly_delayInSamples = 1;
+
 	// compute read index as the write index minus the delay length
 	dly_readIndex = dly_writeIndex - dly_delayInSamples;
 
