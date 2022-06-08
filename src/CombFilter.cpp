@@ -1,7 +1,6 @@
 #pragma once
 #include "CombFilter.h"
-#include<math.h>
-
+#include <math.h>
 
 
 CombFilter::CombFilter() : Delay()

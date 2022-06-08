@@ -10,7 +10,6 @@
 #include "AllPassFilter.h"
 #include "Delay.h"
 #include "LPCombFilter.h"
-#include "ModDelay.h"
 
 class Freeverb
 {

@@ -317,12 +317,9 @@ void Freeverb::processAudio(float* in, float* out)
     float inputL = 0;
     float inputR = 0;
 
-    // Compute mono input from Left and Right inputs
-    float input_mono = (inL + inR) / 2.0;
-
     // Pre-delay processing 
-    inputL = preDelayModule->processAudio(input_mono);
-    inputR = preDelayModule->processAudio(input_mono);
+    inputL = preDelayModule->processAudio(inL);
+    inputR = preDelayModule->processAudio(inR);
 
     // Input AllPass Filters series processing
     for (int j = 0; j < NUM_ALLPASS_FILTERS_IN; j++) {

@@ -16,4 +16,3 @@ public:
 	void setFeedbackToNegative();
 	void setFeedbackToPositive();
 };
-

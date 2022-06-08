@@ -42,11 +42,10 @@ public:
 	virtual void setSampleRate(int sampleRate);
 	void setDelayInmsec(float delayInmsec);
 	void setMakeUpGaindB(float gaindB);
-	void setMakeUpGainLin(float gainLin);	
+	void setMakeUpGainLin(float gainLin);
 	void updateIndices();
 	void writeToDelayLine(float xn);
 	float readFromDelayLine();
 	float linearInterp(float x1, float x2, float y1, float y2, float x);
 	virtual float processAudio(float xn);
 };
-

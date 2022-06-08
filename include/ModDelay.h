@@ -2,7 +2,6 @@
 #include "CombFilter.h"
 #include "LFO.h"
 
-
 enum class ModulationType {Chorus=0, Vibrato, Flanger};
 
 class ModDelay : protected CombFilter
