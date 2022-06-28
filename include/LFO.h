@@ -1,5 +1,4 @@
 #pragma once
-
 enum class OscillatorType {Saw=0, Sine, Triangular, Pulse};
 
 class LFO
@@ -42,7 +41,6 @@ public:
 	void setLFOunipolar(bool isUnipolar);
 	float getLFOFrequency() const;	
 	virtual void setSampleRate(int sampleRate);
-	float linearInterp(float x1, float x2, float y1, float y2, float x);
 	virtual float processAudio();
 
 private:

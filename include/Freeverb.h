@@ -2,10 +2,6 @@
 #define NUM_COMB_FILTERS 8
 #define NUM_ALLPASS_FILTERS_IN 3
 #define NUM_ALLPASS_FILTERS_OUT 3
-#define MAX_LPF_FREQUENCY 20000.0
-#define MIN_LPF_FREQUENCY 20.0
-#define MAX_HPF_FREQUENCY 17000.0
-#define MIN_HPF_FREQUENCY 10.0
 #include <math.h>
 #include "AllPassFilter.h"
 #include "Delay.h"
@@ -44,9 +40,7 @@ public:
 
 	Freeverb();
 	~Freeverb();
-	void init(int sampleRate, float rwet, float rdecay, float rdamping, float rsmearing, float rspread, float rpredelay);
-	float mapValueIntoRange(float value, float minvalue, float maxValue);
-	float mapValueOutsideRange(float value, float minValue, float maxValue);
+	void init(int sampleRate, float rwet, float rdecay, float rdamping, float rsmearing, float rspread, float rpredelay);	
 	void setCombFiltersDelay();
 	void setAllPassFiltersDelay();
 	void updateReverbParameters();

@@ -1,7 +1,7 @@
 #pragma once
 #include "Delay.h"
 #include <string>
-
+#include "utils.h"
 
 Delay::Delay()
 {
@@ -196,21 +196,6 @@ float Delay::readFromDelayLine()
 	float interp = linearInterp(0, 1, yn, yn_1, frac);
 	
 	return interp;
-}
-
-float Delay::linearInterp(float x1, float x2, float y1, float y2, float x)
-{
-	float denom = x2 - x1;
-	if (denom == 0)
-		return y1; // should not ever happen
-
-	// calculate decimal position of x
-	float dx = (x - x1) / (x2 - x1);
-
-	// use weighted sum method of interpolating
-	float result = dx * y2 + (1 - dx) * y1;
-
-	return result;
 }
 
 float Delay::processAudio(float xn)

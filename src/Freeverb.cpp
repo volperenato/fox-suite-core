@@ -1,16 +1,15 @@
-#include "Freeverb.h"
-
 /*--------------------------------------------------------------------*/
 #define _USE_MATH_DEFINES
 #include <stdlib.h>
 #include <math.h>
+#include "Freeverb.h"
+#include "utils.h"
+
 #define MAX_COMB_FILTER_LENGTH_IN_MS 100.0
 #define MAX_PREDELAY_VALUE_IN_MS 300.0
 #define MAX_AP_FILTER_LENGTH_IN_MS 50.0
 #define MAX_REVERB_DECAY_IN_SECONDS 5.0
 #define MAX_SMEARING_VALUE 0.97
-#define MIN_MOD_RATE_IN_HZ 0.1
-#define MAX_MOD_RATE_IN_HZ 10.0
 #define STEREO_SPREAD_COEFFICIENT_IN_MS 1.0
 /*--------------------------------------------------------------------*/
 
@@ -240,22 +239,6 @@ float Freeverb::getReverbPreDelayInMilliseconds()
 float Freeverb::getReverbSpread()
 {
     return freeverb_spread;
-}
-/*--------------------------------------------------------------------*/
-
-/*--------------------------------------------------------------------*/
-// Convert a value from interval [minValue, maxValue] to [0,1]
-float Freeverb::mapValueIntoRange(float value, float minvalue, float maxValue)
-{
-    return minvalue + value * (maxValue - minvalue);
-}
-/*--------------------------------------------------------------------*/
-
-/*--------------------------------------------------------------------*/
-// Convert a value from interval [0,1] to [minValue, maxValue]
-float Freeverb::mapValueOutsideRange(float value, float minValue, float maxValue)
-{
-    return (value - minValue) / (maxValue - minValue);
 }
 /*--------------------------------------------------------------------*/
 
