@@ -5,7 +5,7 @@
 
 Delay::Delay()
 {
-	dly_buffer				= NULL;
+	dly_buffer				= nullptr;
 	dly_makeUpGaindB		= 0.0;
 	dly_makeUpGain			= 1.0;
 	dly_delayInmsec			= 0.0;
@@ -19,9 +19,7 @@ Delay::Delay()
 
 Delay::~Delay()
 {
-	if (dly_buffer)
-		delete dly_buffer;
-	dly_buffer = NULL;
+	freeBuffer();
 }
  
 void Delay::init(float maxDelayInmsec, int sampleRate)
@@ -40,6 +38,10 @@ void Delay::init(float maxDelayInmsec, int sampleRate)
 
 	// set delay in samples
 	dly_delayInSamples = dly_lineLengthInSamples;
+
+	// init read and write indices
+	dly_readIndex = 0;
+	dly_writeIndex = 0;
 
 	// initialize delay line
 	initDelayLine();
@@ -68,6 +70,9 @@ void Delay::initInSamples(int delayLengthInSamples, int sampleRate)
 
 void Delay::initDelayLine()
 {
+	// free the delay buffer in case it had already been allocated
+	freeBuffer(); 
+
 	// define delay line length in bytes
 	int lineLengthInBytes = dly_lineLengthInSamples * sizeof(float);
 
@@ -99,27 +104,22 @@ void Delay::updateParameters()
 		dly_readIndex += dly_lineLengthInSamples;
 }
 
-void Delay::reset()
-{
-	delete dly_buffer;
-	dly_buffer = NULL;
-	dly_readIndex = 0;
-	dly_writeIndex = 0;
+void Delay::freeBuffer() {
+	if (dly_buffer)
+		delete dly_buffer;
+	dly_buffer = nullptr;
 }
 
 void Delay::setSampleRate(int sampleRate)
 {
-	// set sample rate internal to this class
-	dly_sampleRate = sampleRate;
+	// temporarily store delay length in milliseconds
+	float dlyInMS = dly_delayInmsec;
+	
+	// initialize the delay from scratches using the same maximum delay length value but new sample rate
+	init(dly_lineLengthInmsec, sampleRate);
 
-	// reset delay line
-	reset();
-
-	// initialize the delay line from scratches
-	initDelayLine();
-
-	// update delay parameters
-	updateParameters();
+	// set the old delay length in milliseconds
+	setDelayInmsec(dlyInMS);
 }
 
 void Delay::setDelayInmsec(float delayInmsec)

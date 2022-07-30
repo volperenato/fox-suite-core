@@ -38,7 +38,7 @@ public:
 	void initInSamples(int delayLengthInSamples, int sampleRate);
 	void initDelayLine();
 	void updateParameters();
-	void reset();
+	void freeBuffer();
 	virtual void setSampleRate(int sampleRate);
 	void setDelayInmsec(float delayInmsec);
 	void setMakeUpGaindB(float gaindB);

@@ -2,10 +2,8 @@
 #include <math.h>
 
 Tremolo::Tremolo() {	
-
 	// initialize modulation constants (max, min modulation depth in milliseconds, mod rate in hz)
 	trem_LFOOscillator = new LFO();
-
 }
 
 Tremolo::~Tremolo() {
