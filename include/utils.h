@@ -1,5 +1,6 @@
 #pragma once
 #include <math.h>
+#include <vector>
 
 #define MAX_LPF_FREQUENCY 19000.0
 #define MIN_LPF_FREQUENCY 20.0
@@ -46,5 +47,25 @@ inline float linearInterp(float x1, float x2, float y1, float y2, float x)
 	float result = dx * y2 + (1 - dx) * y1;
 
 	return result;
+}
+/*--------------------------------------------------------------------*/
+
+/*--------------------------------------------------------------------*/
+inline std::vector<float> exponentialVector(float min, float max, int n) {
+    std::vector<float> out(n);
+    float rate;
+    float step = (max - min) / n;
+    for (int i = 0; i < n; i++) {
+        rate = (float)(i + 1) * 2.0 / n;
+		out[i] = step * (exp(rate) - 0.5);
+    }
+    return out;
+}
+/*--------------------------------------------------------------------*/
+
+/*--------------------------------------------------------------------*/
+inline float randomInRange(float min, float max) {
+	float unitRand = rand() / float(RAND_MAX);
+	return min + unitRand * (max - min);
 }
 /*--------------------------------------------------------------------*/

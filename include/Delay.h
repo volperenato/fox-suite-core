@@ -10,7 +10,7 @@ protected:
 	int dly_lineLengthInSamples;
 
 	// Delay line maximum Length in milliseconds
-	int dly_lineLengthInmsec;
+	float dly_lineLengthInmsec;
 
 	// Delay line Length in samples
 	float dly_delayInSamples;
@@ -43,6 +43,9 @@ public:
 	void setDelayInmsec(float delayInmsec);
 	void setMakeUpGaindB(float gaindB);
 	void setMakeUpGainLin(float gainLin);
+	float getBufferSizeMs();
+	float getDelayLength();
+	int getSampleRate();
 	void updateIndices();
 	void writeToDelayLine(float xn);
 	float readFromDelayLine();

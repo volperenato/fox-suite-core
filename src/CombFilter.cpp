@@ -3,8 +3,7 @@
 #include <math.h>
 
 
-CombFilter::CombFilter() : Delay()
-{
+CombFilter::CombFilter() : Delay() {
 	cf_feedbackGain     = 0.0;
 	cf_decayInSeconds   = 0.0;
 	cf_feedbackGainSign = 1;
@@ -13,13 +12,11 @@ CombFilter::CombFilter() : Delay()
 
 CombFilter::~CombFilter() {}
 
-void CombFilter::setFeedback(float g)
-{
+void CombFilter::setFeedback(float g) {
 	cf_feedbackGain = g;
 }
 
-void CombFilter::setFeedbackFromDecay(float decayInSeconds)
-{
+void CombFilter::setFeedbackFromDecay(float decayInSeconds) {
 	// set decay
 	cf_decayInSeconds = decayInSeconds;
 	
@@ -30,8 +27,7 @@ void CombFilter::setFeedbackFromDecay(float decayInSeconds)
 	cf_feedbackGain = cf_feedbackGainSign * feedbackModule;
 }
 
-float CombFilter::processAudio(float xn)
-{
+float CombFilter::processAudio(float xn) {
 	// Extract value from delay buffer
 	float yn = readFromDelayLine();
 	
@@ -48,13 +44,11 @@ float CombFilter::processAudio(float xn)
 	return yn * dly_makeUpGain;
 }
 
-void CombFilter::setFeedbackToNegative()
-{
+void CombFilter::setFeedbackToNegative() {
 	cf_feedbackGainSign = -1;
 }
 
-void CombFilter::setFeedbackToPositive()
-{	
+void CombFilter::setFeedbackToPositive() {	
 	cf_feedbackGainSign = 1;
 }
 

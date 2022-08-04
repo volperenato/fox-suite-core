@@ -10,7 +10,6 @@ LPCombFilter::LPCombFilter() : CombFilter()
 	setCutoffFrequency(MAX_CUTOFF_FREQUENCY);
 }
 
-
 LPCombFilter::~LPCombFilter() {
 	lpcf_feedbackLPF->~LPFButterworth();
 }
