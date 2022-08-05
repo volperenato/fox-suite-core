@@ -1,12 +1,10 @@
 #pragma once
+#include "utils.h"
+
 #define DEFAULT_NUMBER_INPUT_CHANNELS 4
 #define DEFAULT_NUMBER_OUTPUT_CHANNELS 1
 #define DEFAULT_MIXING_LOGIC MixMode::WeightedSum
 
-enum class MixMode {
-	WeightedSum,
-	First
-};
 
 class ChannelMixer {
 
@@ -21,11 +19,13 @@ public:
 	ChannelMixer() {
 		setNumberOfInputChannels(DEFAULT_NUMBER_INPUT_CHANNELS);
 		setNumberOfOutputChannels(DEFAULT_NUMBER_OUTPUT_CHANNELS);
+		mix_mode = DEFAULT_MIXING_LOGIC;
 	}
 
 	ChannelMixer(int numChIn, int numChOut) {
 		setNumberOfInputChannels(numChIn);
 		setNumberOfOutputChannels(numChOut);
+		mix_mode = DEFAULT_MIXING_LOGIC;
 	}
 
 	~ChannelMixer() {}

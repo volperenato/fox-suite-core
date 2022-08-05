@@ -17,6 +17,22 @@ const float MIN_HPF_FREQUENCY_LOG = log(MIN_HPF_FREQUENCY);
 const float MAX_FREQUENCY_LOG = log(MAX_FREQUENCY);
 const float MIN_FREQUENCY_LOG = log(MIN_FREQUENCY);
 
+enum class MixMode {
+	WeightedSum,
+	First
+};
+
+enum class DelayDistribution {
+	Exponential,
+	RandomInRange,
+	Equal
+};
+
+enum class DiffuserDelayLogic {
+	Doubled,
+	Equal
+};
+
 /*--------------------------------------------------------------------*/
 // Convert a value from interval [minValue, maxValue] to [0,1]
 inline float mapValueIntoRange(float value, float minvalue, float maxValue)
@@ -57,7 +73,7 @@ inline std::vector<float> exponentialVector(float min, float max, int n) {
     float step = (max - min) / n;
     for (int i = 0; i < n; i++) {
         rate = (float)(i + 1) * 2.0 / n;
-		out[i] = step * (exp(rate) - 0.5);
+		out[i] = min + step * (exp(rate) - 0.5);
     }
     return out;
 }

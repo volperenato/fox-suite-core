@@ -38,7 +38,7 @@ void Delay::init(float maxDelayInmsec, int sampleRate) {
 	// set delay msec
 	dly_delayInmsec = dly_lineLengthInmsec;		
 
-	// init read&write indices	
+	// reset write index
 	dly_writeIndex = 0;	
 
 	// initialize delay line
@@ -76,7 +76,7 @@ void Delay::initDelayLine() {
 
 	// call lock on defined critical section and call unlock on destructor
 	// -> block other threads calling this function
-	Fox::AutoLock lock(delBufferCritSection);
+	//Fox::AutoLock lock(delBufferCritSection);
 
 	// free the delay buffer in case it had already been allocated
 	freeBuffer();
@@ -133,6 +133,7 @@ void Delay::setDelayInmsec(float delayInmsec) {
 
 	// Set delay line length in milliseconds
 	dly_delayInmsec = delayInmsec;
+	dly_writeIndex = 0;
 
 	// Update parameters based on new delay length
 	updateParameters();
@@ -199,7 +200,7 @@ float Delay::readFromDelayLine() {
 float Delay::processAudio(float xn) {
 	// call lock on defined critical section and call unlock on destructor
 	// -> block other threads calling this function
-	Fox::AutoLock lock(delBufferCritSection);
+	//Fox::AutoLock lock(delBufferCritSection);
 
 	// read delay sample
 	float yn = readFromDelayLine();

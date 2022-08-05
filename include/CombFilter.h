@@ -15,4 +15,5 @@ public:
 	virtual float processAudio(float xn) override;
 	void setFeedbackToNegative();
 	void setFeedbackToPositive();
+	float getFeedback();
 };

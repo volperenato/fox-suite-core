@@ -2,6 +2,7 @@
 #include "MultiChannelDelay.h"
 #include "Hadamard.h"
 #include "FlipPolarity.h"
+#include "utils.h"
 #include <string>
 
 #define DEFAULT_NUMBER_OF_CHANNELS_MDIFF 4

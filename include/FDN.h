@@ -1,8 +1,10 @@
 #pragma once
 #include "MultiChannelDiffuser.h"
+#include "MultiChannelFeedback.h"
 #include "ChannelSplitter.h"
 #include "ChannelMixer.h"
 #include "constants.h"
+#include "utils.h"
 
 #define DEFAULT_DIFFUSION_STEPS 1
 #define DEFAULT_NUMBER_INPUT_CHANNELS_FDN 1
@@ -10,13 +12,9 @@
 #define DEFAULT_NUMBER_OUTPUT_CHANNELS_FDN 1
 #define DEFAULT_DIFFUSER_DELAY_DISTRIBUTION DelayDistribution::RandomInRange
 #define DEFAULT_DIFFUSER_DELAY_LOGIC DiffuserDelayLogic::Doubled
+#define DEFAULT_FEEDBACK_DELAY_LOGIC DelayDistribution::Exponential
 
 using namespace std;
-
-enum class DiffuserDelayLogic {
-	Doubled,
-	Equal
-};
 
 class FDN {
 
@@ -25,39 +23,46 @@ protected:
 	ChannelSplitter* fdn_splitter;
 	ChannelMixer* fdn_mixer;
 	vector<MultiChannelDiffuser*> fdn_diffuser;
+	MultiChannelFeedback* fdn_feedback;
 	int fdn_inputChannels, fdn_internalChannels, fdn_outputChannels;
 	int fdn_diffusionSteps;
 	float* fdn_spOut, *fdn_dlOut;
 	int fdn_sampleRate;	
+	float fdn_diffMaxLength, fdn_feedMaxLength;
 
 public:
 
 	// Class constructors
 	FDN() { 				
-		constructFDN(DEFAULT_NUMBER_INPUT_CHANNELS_FDN, DEFAULT_NUMBER_DIFFUSION_CHANNELS_FDN, DEFAULT_NUMBER_OUTPUT_CHANNELS_FDN, DEFAULT_DIFFUSION_STEPS, _TEMPLATE_SAMPLERATE);
+		constructFDN(DEFAULT_NUMBER_INPUT_CHANNELS_FDN, DEFAULT_NUMBER_DIFFUSION_CHANNELS_FDN, DEFAULT_NUMBER_OUTPUT_CHANNELS_FDN, DEFAULT_DIFFUSION_STEPS);
 	}
 
 	FDN(int numChIn, int numChInt, int numChOut) {
-		constructFDN(numChIn, numChInt, numChOut, DEFAULT_DIFFUSION_STEPS, _TEMPLATE_SAMPLERATE);
+		constructFDN(numChIn, numChInt, numChOut, DEFAULT_DIFFUSION_STEPS);
 	}
 
 	FDN(int numChIn, int numChInt, int numChOut, int numDiffStep) {						
-		constructFDN(numChIn, numChInt, numChOut, numDiffStep, _TEMPLATE_SAMPLERATE);
+		constructFDN(numChIn, numChInt, numChOut, numDiffStep);
 	}
 
 	FDN(int numChIn, int numChInt, int numChOut, int numDiffStep, int sampleRate) {
-		constructFDN(numChIn, numChInt, numChOut, numDiffStep, sampleRate);
+		constructFDN(numChIn, numChInt, numChOut, numDiffStep);
 	}
 
 	// Class destructor
 	~FDN() { 
 		deleteInterfaceBlocks();
-		deleteDiffusionBlocks();		
+		deleteDiffusionBlocks();	
+		deleteFeedbackBlock();
 		deleteInternalArrays();
 	}	
 
 	// Initialize FDN elements
-	void initialize(float diffusionMaximumLength, int sampleRate) {
+	void initialize(float diffusionMaximumLength, float feedbackMaxLength, int sampleRate) {
+		fdn_sampleRate = sampleRate;
+		fdn_diffMaxLength = diffusionMaximumLength;
+		fdn_feedMaxLength = feedbackMaxLength;
+		fdn_feedback->initDelayLines(feedbackMaxLength, sampleRate);
 		for (int i = 0; i < fdn_diffusionSteps; i++)
 			fdn_diffuser[i]->init(diffusionMaximumLength, sampleRate);
 	}
@@ -76,39 +81,62 @@ public:
 		}
 	}
 
+	// Set the length of delay lines in the feedback block
+	void setFeedbackDelayLengths(float mindelay, float maxDelay, DelayDistribution distr = DEFAULT_FEEDBACK_DELAY_LOGIC) {
+		fdn_feedback->setDelayLengths(mindelay, maxDelay, distr);
+	}
+
+	void setDecayInSeconds(float decaySeconds) {
+		fdn_feedback->setDecayInSeconds(decaySeconds);
+	}
+
 	// Set the number of input channels
 	void setNumberOfInputChannels(int numChIn) {
 		fdn_inputChannels = numChIn;
 		fdn_splitter->setNumberOfChannelsIn(fdn_inputChannels);
-		fdn_splitter->setNumberOfChannelsOut(fdn_internalChannels);
 	}
 
 	// Set the number of internal channels (for processing purposes)
 	void setNumberOfInternalChannels(int numChInt) {
 		fdn_internalChannels = numChInt;
-		for (int i = 0; i < fdn_diffusionSteps; i++) fdn_diffuser[i]->setNumberOfInternalChannels(numChInt);
+		fdn_splitter->setNumberOfChannelsOut(fdn_internalChannels);
+		for (int i = 0; i < fdn_diffusionSteps; i++) 
+			fdn_diffuser[i]->setNumberOfInternalChannels(numChInt);
+		fdn_feedback->setNumberOfChannels(numChInt);		
+		fdn_mixer->setNumberOfInputChannels(fdn_internalChannels);
 	}
 
 	// Set the number of output channels
 	void setNumberOfOutputChannels(int numChOut) {
 		fdn_outputChannels = numChOut;
-		fdn_mixer->setNumberOfInputChannels(fdn_internalChannels);
 		fdn_mixer->setNumberOfOutputChannels(fdn_outputChannels);
 	}
 		
 	// Set the sample rate
 	void setSampleRate(int sampleRate) { 
 		fdn_sampleRate = sampleRate;
-		for (int i = 0; i < fdn_diffusionSteps; i++) fdn_diffuser[i]->setSampleRate(sampleRate); 
+		for (int i = 0; i < fdn_diffusionSteps; i++) 
+			fdn_diffuser[i]->setSampleRate(sampleRate); 
 	}	
 
 	// Set output mixing mode
 	void setMixMode(MixMode mode) { fdn_mixer->setMixMode(mode); }
 
+	// Set number of diffusion steps
+	void setDiffusionSteps(int numSteps) {
+		deleteDiffusionBlocks();
+		fdn_diffusionSteps = numSteps;
+		constructDiffusionBlocks();
+		for (int i = 0; i < fdn_diffusionSteps; i++)
+			fdn_diffuser[i]->init(fdn_diffMaxLength, fdn_sampleRate);
+	}
+
 	// Process Audio
 	void processAudio(float* in, float* out) { 
 		fdn_splitter->processAudio(in, fdn_spOut);
-		for (int i = 0; i < fdn_diffusionSteps; i++) fdn_diffuser[i]->processAudio(fdn_spOut, fdn_spOut);
+		for (int i = 0; i < fdn_diffusionSteps; i++) 
+			fdn_diffuser[i]->processAudio(fdn_spOut, fdn_spOut);
+		fdn_feedback->processAudio(fdn_spOut, fdn_spOut);
 		fdn_mixer->processAudio(fdn_spOut, out);
 	};
 
@@ -124,20 +152,21 @@ private:
 
 	// Set the length of diffusion steps each equal to the previous
 	void setEqualDiffuserDelayLengths(float delayLengths, DelayDistribution distr = DEFAULT_DIFFUSER_DELAY_DISTRIBUTION) {
-		for (int i = 0; i < fdn_diffusionSteps; i++) fdn_diffuser[i]->setDelayLinesLength(delayLengths, distr);
+		for (int i = 0; i < fdn_diffusionSteps; i++) 
+			fdn_diffuser[i]->setDelayLinesLength(delayLengths, distr);
 	}
 
 	// Function called in the class constructors
-	void constructFDN(int numChIn, int numChInt, int numChOut, int numDiffStep, int sampleRate) {
+	void constructFDN(int numChIn, int numChInt, int numChOut, int numDiffStep) {
 		srand(_SEED_FOR_RAND_GENERATION);
 		fdn_inputChannels = numChIn;
 		fdn_internalChannels = numChInt;
 		fdn_outputChannels = numChOut;
-		fdn_diffusionSteps = numDiffStep;		
+		fdn_diffusionSteps = numDiffStep;			
 		constructInterfaceBlocks();
 		constructDiffusionBlocks();
+		constructFeedbackBlock();
 		initInternalArrays();
-		setSampleRate(sampleRate);
 	}	
 
 	// Construct objects used for in&out interfaces purposes (ChannelSplitter and ChannelMixer)
@@ -148,12 +177,14 @@ private:
 
 	// Construct objects used for diffusion purposes and set their internal channels correctly (MultiChannelDiffuser)
 	void constructDiffusionBlocks() {
-		deleteDiffusionBlocks();				
-
 		// Create each MultiChannelDiffuser object, with custom constructor)
 		for (int i = 0; i < fdn_diffusionSteps; i++) {
 			fdn_diffuser.push_back(new MultiChannelDiffuser(fdn_internalChannels));
 		}
+	}
+
+	void constructFeedbackBlock() {
+		fdn_feedback = new MultiChannelFeedback(fdn_internalChannels);
 	}
 
 	// Delete objects used for in&out interfaces (ChannelSplitter and ChannelMixer)
@@ -166,11 +197,17 @@ private:
 	void deleteDiffusionBlocks() {
 		if (!fdn_diffuser.empty()) {
 			// Each element of the vector is a point, thus it has to be de-allocated
-			for (int i = 0; i < fdn_diffuser.size(); i++) delete fdn_diffuser[i];
+			for (int i = 0; i < fdn_diffuser.size(); i++) 
+				delete fdn_diffuser[i];
 
 			// "clear" calls distructors as well (if present)
 			fdn_diffuser.clear();
 		}
+	}
+
+	// Delete objects used for feedback purposes (MultiChannelFeedback)
+	void deleteFeedbackBlock() {
+		delete fdn_feedback;
 	}
 
 	// Initialize internal arrays for audio processing

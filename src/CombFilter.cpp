@@ -52,4 +52,8 @@ void CombFilter::setFeedbackToPositive() {
 	cf_feedbackGainSign = 1;
 }
 
+float CombFilter::getFeedback() {
+	return cf_feedbackGain;
+}
+
 

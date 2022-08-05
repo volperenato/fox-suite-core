@@ -7,12 +7,6 @@
 #define DEFAULT_DELAY_BUFFER_LENGTHS 500.0
 #define MINIMUM_DELAY_LENGTH_MCD 0.1
 
-enum class DelayDistribution {
-	Exponential,
-	RandomInRange,
-	Equal
-};
-
 using namespace std;
 
 class MultiChannelDelay {
