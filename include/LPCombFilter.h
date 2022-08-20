@@ -1,13 +1,13 @@
 #pragma once
 #include "CombFilter.h"
-#include "LPFButterworth.h"
+#include "LowPassFilter.h"
 
 class LPCombFilter : public CombFilter
 {
 protected:
 
 	// lpf Butterworth object for the feedback path
-	LPFButterworth* lpcf_feedbackLPF;
+	LowPassFilter* lpcf_feedbackLPF;
 
 	// lpf cutoff frequency
 	float lpcf_cutoffFreq;
@@ -18,6 +18,7 @@ public:
 	~LPCombFilter();
 	void init(float maxDelayInmsec, int sampleRate) override;
 	void setCutoffFrequency(float cutoffFreq);
+	void setFilterType(FilterType type);
 	float processLowPass(float xn);
 	virtual float processAudio(float xn) override;
 };

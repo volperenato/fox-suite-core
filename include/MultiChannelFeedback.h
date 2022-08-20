@@ -63,9 +63,10 @@ public:
 			mcf_DelayLines[i]->setSampleRate(sampleRate);
 	}
 
-	void setDelayLengths(float minDelay, float maxDelay, DelayDistribution distr = DelayDistribution::Exponential) {
+	void setDelayLengths(float minDelay, float maxDelay = 0.0, DelayDistribution distr = DelayDistribution::Exponential) {
 		mcf_minDelayLength = minDelay;
-		mcf_maxDelayLength = maxDelay;
+		if (maxDelay != 0.0)
+			mcf_maxDelayLength = maxDelay;
 		mcf_delayDistribution = distr;
 		switch (distr) {
 		case DelayDistribution::Exponential: {
@@ -120,8 +121,6 @@ public:
 			mcf_DelayLines[i]->writeToDelayLine(in[i] + houseout[i]);
 			mcf_DelayLines[i]->updateIndices();
 		}
-
-		//std::copy(housein.begin(), housein.end(), out);
 	}
 
 private:
@@ -147,10 +146,13 @@ private:
 	}
 
 	void setDelayExponential() {
-		std::vector<float> expo(mcf_numberOfChannels);
-		expo = exponentialVector(mcf_minDelayLength, mcf_maxDelayLength, mcf_numberOfChannels);
-		for (int i = 0; i < mcf_numberOfChannels; i++)
-			mcf_DelayLines[i]->setDelayInmsec(expo[i]);
+		//vector<float> expo(mcf_numberOfChannels);
+		//expo = exponentialVector(mcf_minDelayLength, mcf_maxDelayLength, mcf_numberOfChannels);
+		for (int i = 0; i < mcf_numberOfChannels; i++) {
+			float r = i * 1.0 / mcf_numberOfChannels;
+			mcf_DelayLines[i]->setDelayInmsec(pow(2, r) * mcf_minDelayLength);
+		}
+			//mcf_DelayLines[i]->setDelayInmsec(expo[i]);
 	}
 
 };

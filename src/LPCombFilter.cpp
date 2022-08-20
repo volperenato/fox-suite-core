@@ -1,17 +1,14 @@
 #pragma once
 #include "LPCombFilter.h"
 #include <math.h>
-#define MAX_CUTOFF_FREQUENCY 20000
 
 
-LPCombFilter::LPCombFilter() : CombFilter()
-{
-	lpcf_feedbackLPF = new LPFButterworth();
-	setCutoffFrequency(MAX_CUTOFF_FREQUENCY);
+LPCombFilter::LPCombFilter() : CombFilter() {
+	lpcf_feedbackLPF = new LowPassFilter();
 }
 
 LPCombFilter::~LPCombFilter() {
-	lpcf_feedbackLPF->~LPFButterworth();
+	delete lpcf_feedbackLPF;
 }
 
 void LPCombFilter::init(float maxDelayInmsec, int sampleRate) {
@@ -28,6 +25,10 @@ void LPCombFilter::setCutoffFrequency(float cutoffFreq) {
 
 	// set LPF cutoff frequency to the inserted value
 	lpcf_feedbackLPF->setCutoffFrequency(lpcf_cutoffFreq);
+}
+
+void LPCombFilter::setFilterType(FilterType type) {
+	lpcf_feedbackLPF->setFilterType(type);
 }
 
 float LPCombFilter::processLowPass(float xn) {
