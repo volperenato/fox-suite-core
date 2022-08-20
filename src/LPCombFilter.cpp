@@ -1,6 +1,6 @@
 #pragma once
 #include "LPCombFilter.h"
-#include<math.h>
+#include <math.h>
 #define MAX_CUTOFF_FREQUENCY 20000
 
 
@@ -14,8 +14,7 @@ LPCombFilter::~LPCombFilter() {
 	lpcf_feedbackLPF->~LPFButterworth();
 }
 
-void LPCombFilter::init(float maxDelayInmsec, int sampleRate)
-{
+void LPCombFilter::init(float maxDelayInmsec, int sampleRate) {
 	// initialize delay line
 	Delay::init(maxDelayInmsec, sampleRate);
 
@@ -23,18 +22,19 @@ void LPCombFilter::init(float maxDelayInmsec, int sampleRate)
 	lpcf_feedbackLPF->init(sampleRate);
 }
 
-void LPCombFilter::setCutoffFrequency(float cutoffFreq)
-{
+void LPCombFilter::setCutoffFrequency(float cutoffFreq) {
 	// set LPCF cutoff frequency to the inserted value
 	lpcf_cutoffFreq = cutoffFreq;
 
 	// set LPF cutoff frequency to the inserted value
 	lpcf_feedbackLPF->setCutoffFrequency(lpcf_cutoffFreq);
-
 }
 
-float LPCombFilter::processAudio(float xn)
-{
+float LPCombFilter::processLowPass(float xn) {
+	return lpcf_feedbackLPF->processAudio(xn);
+}
+
+float LPCombFilter::processAudio(float xn) {
 	// Extract value from delay buffer
 	float yn = readFromDelayLine();
 	

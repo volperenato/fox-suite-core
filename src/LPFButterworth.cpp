@@ -2,6 +2,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "LPFButterworth.h"
+#include "constants.h"
 
 LPFButterworth::LPFButterworth() {
 	lpf_a0 = 0.0;
@@ -9,7 +10,8 @@ LPFButterworth::LPFButterworth() {
 	lpf_a2 = 0.0;
 	lpf_b1 = 0.0;
 	lpf_b2 = 0.0;
-	lpf_cutoffFreq = 0.0;
+	lpf_cutoffFreq = MAX_LPF_FREQUENCY;
+	lpf_sampleRate = _TEMPLATE_SAMPLERATE;
 	lpf_xn_1 = 0.0;
 	lpf_xn_2 = 0.0;
 	lpf_yn_1 = 0.0;
@@ -64,7 +66,6 @@ void LPFButterworth::updateBuffers(float xn, float yn)
 
 float LPFButterworth::processAudio(float xn)
 {
-
 	// compute filtered output
 	float yn = lpf_a0 * xn + lpf_a1 * lpf_xn_1 + lpf_a2 * lpf_xn_2 - lpf_b1 * lpf_yn_1 - lpf_b2 * lpf_yn_2;
 

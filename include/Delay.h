@@ -1,4 +1,8 @@
 #pragma once
+#include <stdlib.h>
+#include <vector>
+#include "constants.h"
+
 class Delay
 {
 protected:
@@ -22,7 +26,7 @@ protected:
 	int dly_readIndex, dly_writeIndex;
 
 	// Delay Line Buffer
-	float* dly_buffer;
+	std::vector<float> dly_buffer;
 
 	// output attenuation in dB
 	float dly_makeUpGaindB;
@@ -36,9 +40,7 @@ public:
 	~Delay();
 	virtual void init(float delayMaximumLengthInmsec, int sampleRate);
 	void initInSamples(int delayLengthInSamples, int sampleRate);
-	void initDelayLine();
-	void updateParameters();
-	void freeBuffer();
+	void initDelayLine();	
 	virtual void setSampleRate(int sampleRate);
 	void setDelayInmsec(float delayInmsec);
 	void setMakeUpGaindB(float gaindB);
@@ -50,4 +52,11 @@ public:
 	void writeToDelayLine(float xn);
 	float readFromDelayLine();
 	virtual float processAudio(float xn);
+
+private:
+
+	void updateParameters();
+	void freeBuffer();
+	void updateBuffer();
+
 };

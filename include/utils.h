@@ -1,21 +1,11 @@
 #pragma once
 #include <math.h>
 #include <vector>
+#include "constants.h"
 
-#define MAX_LPF_FREQUENCY 19000.0
-#define MIN_LPF_FREQUENCY 20.0
-#define MAX_HPF_FREQUENCY 17000.0
-#define MIN_HPF_FREQUENCY 10.0
-#define MAX_FREQUENCY 20000.0
-#define MIN_FREQUENCY 20.0
-
-// const parameters
-const float MAX_LPF_FREQUENCY_LOG = log(MAX_LPF_FREQUENCY);
-const float MIN_LPF_FREQUENCY_LOG = log(MIN_LPF_FREQUENCY);
-const float MAX_HPF_FREQUENCY_LOG = log(MAX_HPF_FREQUENCY);
-const float MIN_HPF_FREQUENCY_LOG = log(MIN_HPF_FREQUENCY);
-const float MAX_FREQUENCY_LOG = log(MAX_FREQUENCY);
-const float MIN_FREQUENCY_LOG = log(MIN_FREQUENCY);
+enum class FilterType {
+	Butterworth
+};
 
 enum class MixMode {
 	WeightedSum,

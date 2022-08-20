@@ -4,10 +4,9 @@
 #include "utils.h"
 #include "threadsync.h"
 
-Fox::CriticalSection delBufferCritSection; 
+//Fox::CriticalSection delBufferCritSection; 
 
 Delay::Delay() {
-	dly_buffer				= nullptr;
 	dly_makeUpGaindB		= 0.0;
 	dly_makeUpGain			= 1.0;
 	dly_delayInmsec			= 0.0;
@@ -16,36 +15,30 @@ Delay::Delay() {
 	dly_writeIndex			= 0;
 	dly_lineLengthInSamples = 0;
 	dly_lineLengthInmsec	= 0.0;
+	dly_sampleRate			= _TEMPLATE_SAMPLERATE;
 }
-
 
 Delay::~Delay() {
 	freeBuffer();
 }
  
-void Delay::init(float maxDelayInmsec, int sampleRate) {
+void Delay::init(float bufferLengthMs, int sampleRate) {
 	// set delay line length in milliseconds
-	dly_lineLengthInmsec = maxDelayInmsec;
+	dly_lineLengthInmsec = bufferLengthMs;
 
 	// allocate sample rate
 	dly_sampleRate = sampleRate;
 
 	// set delay line length in samples
-	dly_lineLengthInSamples = dly_lineLengthInmsec * dly_sampleRate / 1000;
+	dly_lineLengthInSamples = dly_lineLengthInmsec * (float)dly_sampleRate / 1000.0;
 	if (dly_lineLengthInSamples < 1)
 		dly_lineLengthInSamples = 1;
-
-	// set delay msec
-	dly_delayInmsec = dly_lineLengthInmsec;		
-
-	// reset write index
-	dly_writeIndex = 0;	
 
 	// initialize delay line
 	initDelayLine();
 
-	// initialize parameters and read/write indices
-	updateParameters();
+	// Set buffer size as delay length
+	setDelayInmsec(dly_lineLengthInmsec);	
 }
 
 void Delay::initInSamples(int delayLengthInSamples, int sampleRate) {
@@ -58,22 +51,16 @@ void Delay::initInSamples(int delayLengthInSamples, int sampleRate) {
 	dly_sampleRate = sampleRate;
 
 	// set delay line length in msec
-	dly_lineLengthInmsec = dly_lineLengthInSamples * 1000 / dly_sampleRate;
-
-	// set delay msec
-	dly_delayInmsec = dly_lineLengthInmsec;
+	dly_lineLengthInmsec = dly_lineLengthInSamples * 1000.0 / (float)dly_sampleRate;
 
 	// init delay line buffer
 	initDelayLine();
 
-	// initialize parameters and read/write indices
-	updateParameters();
+	// Set buffer size as delay length
+	setDelayInmsec(dly_lineLengthInmsec);
 }
 
-void Delay::initDelayLine() {
-	// define delay line length in bytes
-	int lineLengthInBytes = dly_lineLengthInSamples * sizeof(float);
-
+void Delay::initDelayLine() {	
 	// call lock on defined critical section and call unlock on destructor
 	// -> block other threads calling this function
 	//Fox::AutoLock lock(delBufferCritSection);
@@ -81,29 +68,30 @@ void Delay::initDelayLine() {
 	// free the delay buffer in case it had already been allocated
 	freeBuffer();
 
-	// allocate memory for the delay line
-	dly_buffer = (float*)malloc(lineLengthInBytes);
-
-	// set the allocated memory at zero
-	memset(dly_buffer, 0, lineLengthInBytes);	
+	// Reserve memory for buffer vector
+	dly_buffer.reserve(dly_lineLengthInSamples);
 }
 
+void Delay::updateBuffer() {
+	for (int i = 0; i < dly_lineLengthInSamples; i++)
+		dly_buffer[i] = 0.0;
+}
 
 void Delay::updateParameters() {
 	// convert makeup gain in linear value
 	dly_makeUpGain = pow(10.0, dly_makeUpGaindB / 20.0);
 
 	// define delay size in samples
-	dly_delayInSamples = dly_delayInmsec * (float)dly_sampleRate / 1000;
+	dly_delayInSamples = dly_delayInmsec * (float)dly_sampleRate / 1000.0;
 
 	// protection against sample == 0 and sample greater than allocated memory
 	if (dly_delayInSamples == 0)
-		dly_delayInSamples = 1;
+		dly_delayInSamples = 1.0;
 	else if (dly_delayInSamples > dly_lineLengthInSamples)
 		dly_delayInSamples = dly_lineLengthInSamples;
 
 	// compute read index as the write index minus the delay length
-	dly_readIndex = dly_writeIndex - dly_delayInSamples;
+	dly_readIndex = dly_writeIndex - (int)dly_delayInSamples;
 
 	// check if the read index is negative. In that case wrap it by adding the delay line length
 	if (dly_readIndex < 0)
@@ -111,9 +99,8 @@ void Delay::updateParameters() {
 }
 
 void Delay::freeBuffer() {
-	if (dly_buffer)
-		free(dly_buffer);
-	dly_buffer = nullptr;
+	if (!dly_buffer.empty())
+		dly_buffer.clear();
 }
 
 void Delay::setSampleRate(int sampleRate) {
@@ -128,15 +115,20 @@ void Delay::setSampleRate(int sampleRate) {
 }
 
 void Delay::setDelayInmsec(float delayInmsec) {
+	// Check that the chosen delay is not higher than allocated one (in milliseconds)
 	if (delayInmsec > dly_lineLengthInmsec)
-		init(delayInmsec, dly_sampleRate);
+		delayInmsec = dly_lineLengthInmsec;
+		//init(delayInmsec, dly_sampleRate);
 
 	// Set delay line length in milliseconds
 	dly_delayInmsec = delayInmsec;
-	dly_writeIndex = 0;
+	//dly_writeIndex = 0;
 
 	// Update parameters based on new delay length
 	updateParameters();
+
+	// Update delay buffer elements
+	//updateBuffer();
 }
 
 void Delay::setMakeUpGaindB(float gaindB) {
@@ -192,7 +184,7 @@ float Delay::readFromDelayLine() {
 	float frac = dly_delayInSamples - (int)dly_delayInSamples;
 
 	// compute the interpolated delay value
-	float interp = linearInterp(0, 1, yn, yn_1, frac);
+	float interp = linearInterp(0.0, 1.0, yn, yn_1, frac);
 	
 	return interp;
 }

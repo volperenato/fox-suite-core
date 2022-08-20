@@ -46,8 +46,8 @@ public:
 		resetInternalArrays();		
 	}
 
-	void setDelayLinesLength(float maxDelayLength, DelayDistribution distr = DelayDistribution::RandomInRange) {
-		mdiff_MultiChDelay->setDelayLinesLength(maxDelayLength, mdiff_sampleRate, distr);
+	void setDelayLinesLength(float minDelayMs, float maxDelayMs, DelayDistribution distr = DelayDistribution::RandomInRange) {
+		mdiff_MultiChDelay->setDelayLinesLength(minDelayMs, maxDelayMs, distr);
 	}
 	
 	void setAllDelayLenghtsMs(float* delayLenghts) { mdiff_MultiChDelay->setSpecificDelayLengthsMs(delayLenghts); }

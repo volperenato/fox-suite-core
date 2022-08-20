@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "constants.h"
 #include <vector>
+
 #define DEFAULT_NUM_OF_CHANNELS_MDEL 4
 #define DEFAULT_DELAY_BUFFER_LENGTHS 500.0
 #define MINIMUM_DELAY_LENGTH_MCD 0.1
@@ -15,7 +16,7 @@ protected:
 
 	int mdel_numberOfChannels;
 	vector<Delay*> mdel_DelayLines;
-	float mdel_delayLengthMs;
+	float mdel_minDelayMs, mdel_maxDelayMs;
 	int mdel_sampleRate;
 	DelayDistribution mdel_delayDistr;
 
@@ -32,27 +33,28 @@ public:
 	~MultiChannelDelay() { deleteDelayLines(); }
 
 	void initDelayLines(float bufferLengthMs, int sampleRate) {
+		mdel_sampleRate = sampleRate;
 		if (!mdel_DelayLines.empty()) {
-			for (int i = 0; i < mdel_DelayLines.size(); i++)
+			for (int i = 0; i < mdel_numberOfChannels; i++)
 				mdel_DelayLines[i]->init(bufferLengthMs, sampleRate);
 		}
 	}
 
 	void setNumberOfChannels(int numCH) {
 		float dlyBufferSize = mdel_DelayLines[0]->getBufferSizeMs();
-		float sampleRate = mdel_DelayLines[0]->getSampleRate();
+		int sampleRate = mdel_DelayLines[0]->getSampleRate();
 		deleteDelayLines();
 		mdel_numberOfChannels = numCH;
 		constructDelayObjects();
 		initDelayLines(dlyBufferSize, sampleRate);
-		setDelayLinesLength(mdel_delayLengthMs, mdel_sampleRate, mdel_delayDistr);
+		setDelayLinesLength(mdel_minDelayMs, mdel_maxDelayMs, mdel_delayDistr);
 	}
 
-	void setDelayLinesLength(float dlyMaxLengthMs, int sampleRate, DelayDistribution distr = DelayDistribution::RandomInRange) {
-		mdel_delayLengthMs = dlyMaxLengthMs;
-		if (mdel_delayLengthMs / mdel_numberOfChannels < MINIMUM_DELAY_LENGTH_MCD)
-			mdel_delayLengthMs = 2 * MINIMUM_DELAY_LENGTH_MCD;
-		mdel_sampleRate = sampleRate;
+	void setDelayLinesLength(float dlyMinLengthMs, float dlyMaxLengthMs, DelayDistribution distr = DelayDistribution::RandomInRange) {
+		mdel_minDelayMs = dlyMinLengthMs;
+		mdel_maxDelayMs = dlyMaxLengthMs;
+		if (mdel_maxDelayMs / mdel_numberOfChannels < MINIMUM_DELAY_LENGTH_MCD)
+			mdel_maxDelayMs = 2 * MINIMUM_DELAY_LENGTH_MCD;
 		mdel_delayDistr = distr;
 		switch (distr) {
 		case DelayDistribution::RandomInRange: {
@@ -95,13 +97,12 @@ public:
 private:
 
 	void setEqualDelayLines() {
-		for (int i = 0; i < mdel_numberOfChannels; i++) {
-			mdel_DelayLines[i]->setDelayInmsec(mdel_delayLengthMs);
-		}
+		for (int i = 0; i < mdel_numberOfChannels; i++)
+			mdel_DelayLines[i]->setDelayInmsec(mdel_maxDelayMs);		
 	}
 
 	void setRandomInRangeDelayLines() {
-		float step = (mdel_delayLengthMs - MINIMUM_DELAY_LENGTH_MCD) / mdel_numberOfChannels;
+		float step = (mdel_maxDelayMs - MINIMUM_DELAY_LENGTH_MCD) / mdel_numberOfChannels;
 		float dlyLength;
 		for (int i = 0; i < mdel_numberOfChannels; i++) {
 			dlyLength = randomInRange(MINIMUM_DELAY_LENGTH_MCD + step * i, MINIMUM_DELAY_LENGTH_MCD + step * (i + 1));
@@ -111,10 +112,9 @@ private:
 
 	void setExponentialDelayLengths() {
 		vector<float> dly(mdel_numberOfChannels);
-		dly = exponentialVector(0.0, mdel_delayLengthMs, mdel_numberOfChannels);
-		for (int i = 0; i < mdel_numberOfChannels; i++) {
-			mdel_DelayLines[i]->setDelayInmsec(dly[i]);
-		}
+		dly = exponentialVector(0.0, mdel_maxDelayMs, mdel_numberOfChannels);
+		for (int i = 0; i < mdel_numberOfChannels; i++)
+			mdel_DelayLines[i]->setDelayInmsec(dly[i]);		
 		dly.clear();
 	}
 
@@ -128,9 +128,8 @@ private:
 
 	void constructDelayObjects() {
 		deleteDelayLines();
-		for (int i = 0; i < mdel_numberOfChannels; i++) {
-			mdel_DelayLines.push_back(new Delay);
-		}
+		for (int i = 0; i < mdel_numberOfChannels; i++)
+			mdel_DelayLines.push_back(new Delay);		
 	}
 
 	void constructMCDL(int numCh) {

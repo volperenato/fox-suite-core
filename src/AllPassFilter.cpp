@@ -20,7 +20,7 @@ void AllPassFilter::setFeedbackFromDecay(float decay)
 	ap_decayInSeconds = decay;
 
 	// compute comb filter gain. Decay value must be in seconds
-	ap_feedbackGain = pow(10, -3 * dly_delayInmsec / (ap_decayInSeconds * 1000));
+	ap_feedbackGain = pow(10, -3 * dly_delayInmsec / (ap_decayInSeconds * 1000.0));
 }
 
 
