@@ -6,6 +6,8 @@
 #include "utils.h"
 
 #define DEFAULT_LOW_PASS_FILTER_TYPE FilterType::Butterworth
+#define DEFAULT_SHELVING_GAIN -6.0
+#define DEFAULT_RESONANCE 0.707
 
 class LowPassFilter {
 
@@ -20,6 +22,12 @@ protected:
 	// lpf sample rate
 	int lpf_sampleRate;
 
+	// lpf gain attenutation (for shelving filters)
+	float lpf_shelvingGaindB;
+
+	// lpf resonance factor Q
+	float lpf_Q;
+
 	// lpf gains
 	float lpf_a0, lpf_a1, lpf_a2, lpf_b1, lpf_b2;
 
@@ -32,6 +40,8 @@ public:
 			lpf_cutoffFreq = freq;
 			lpf_sampleRate = sampleRate;
 			lpf_type = type;
+			lpf_shelvingGaindB = DEFAULT_SHELVING_GAIN;
+			lpf_Q = DEFAULT_RESONANCE;
 			lpf_xn_1 = 0.0;
 			lpf_xn_2 = 0.0;
 			lpf_yn_1 = 0.0;
@@ -70,6 +80,15 @@ public:
 		updateGains();
 	}
 
+	void setShelvingGain(float gain) {
+		lpf_shelvingGaindB = gain;
+		updateGains();
+	}
+
+	void setQualityFactor(float Q) {
+		lpf_Q = Q;
+		updateGains();
+	}
 
 	void updateGains() {
 		switch (lpf_type) {
@@ -81,6 +100,83 @@ public:
 			lpf_a2 = lpf_a0;
 			lpf_b1 = 2.0 * lpf_a0 * (1 - C * C);
 			lpf_b2 = lpf_a0 * (1.0 - sqrt(2.0) * C + C * C);
+			break;
+		}
+		case FilterType::LinkwitzRiley: {
+			float omegac = M_PI * lpf_cutoffFreq;
+			float thetac = omegac / (float)lpf_sampleRate;
+			float k = omegac / tan(thetac);
+			float delta = k * k + omegac * omegac + 2 * k * omegac;
+			lpf_a0 = omegac * omegac / delta;
+			lpf_a1 = 2 * lpf_a0;
+			lpf_a2 = lpf_a0;
+			lpf_b1 = (-2 * k * k + 2 * omegac * omegac) / delta;
+			lpf_b2 = (-2 * k * omegac + k * k + omegac * omegac) / delta;
+			break;
+		}
+		case FilterType::Shelving: {
+			float thetac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
+			float mi = pow(10.0, lpf_shelvingGaindB / 20.0);
+			float beta = 4.0 / (1.0 + mi);
+			float delta = beta * tan(thetac / 2.0);
+			float gamma = (1.0 - delta) / (1.0 + delta);
+			lpf_a0 = (1.0 - gamma) / 2.0;
+			lpf_a1 = lpf_a0;
+			lpf_a2 = 0.0;
+			lpf_b1 = -gamma;
+			lpf_b2 = 0.0;
+			break;
+		}
+		case FilterType::DigitalFirstOrder: {
+			float thetac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
+			float gamma = cos(thetac) / (1.0 + sin(thetac));
+			lpf_a0 = (1.0 - gamma) / 2.0;
+			lpf_a1 = lpf_a0;
+			lpf_a2 = 0.0;
+			lpf_b1 = -gamma;
+			lpf_b2 = 0.0;
+			break;
+		}
+		case FilterType::AllPoleFirstOrder: {
+			float thetac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
+			float gamma = 2.0 - cos(thetac);
+			lpf_b1 = sqrt(gamma * gamma - 1.0) - gamma;
+			lpf_a0 = 1.0 + lpf_b1;
+			lpf_a1 = 0.0;
+			lpf_a2 = 0.0;
+			lpf_b2 = 0.0;
+			break;
+		}
+		case FilterType::AllPoleMMA: {
+			float thetac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
+			float resonance;
+			if (lpf_Q <= 0.707)
+				resonance = 0.0;
+			else
+				resonance = 20.0 * log10(lpf_Q * lpf_Q / sqrt(lpf_Q * lpf_Q - 0.25));
+			float r = (cos(thetac) + sin(thetac) * sqrt(pow(10.0, resonance / 10.0) - 1.0)) / (pow(10.0, resonance / 20.0) * sin(thetac) + 1.0);
+			float g = pow(10.0, -resonance / 40.0);
+			lpf_b1 = -2.0 * r * cos(thetac);
+			lpf_b2 = r * r;
+			lpf_a0 = g * (1.0 + lpf_b1 + lpf_b2);
+			lpf_a1 = 0.0;
+			lpf_a2 = 0.0;
+			break;
+		}
+		case FilterType::Vicanek: {
+			float omegac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
+			float f0 = omegac / M_PI;
+			float q = 1.0 / (2.0 * lpf_Q);
+			if (q <= 1.0)
+				lpf_b1 = -2.0 * exp(-q * omegac) * cos(sqrt(1.0 - q * q) * omegac);
+			else
+				lpf_b1 = -2.0 * exp(-q * omegac) * cosh(sqrt(q * q - 1.0) * omegac);
+			lpf_b2 = exp(-2.0 * q * omegac);
+			float r1 = ((1.0 - lpf_b1 + lpf_b2) * f0 * f0) / sqrt((1.0 - f0 * f0) * (1.0 - f0 * f0) + f0 * f0 / (lpf_Q * lpf_Q));
+			float r0 = 1.0 + lpf_b1 + lpf_b2;
+			lpf_a0 = (r0 + r1) / 2.0;
+			lpf_a1 = r0 - lpf_a0;
+			lpf_a2 = 0.0;
 			break;
 		}
 		}		
@@ -106,6 +202,18 @@ public:
 	float getCutoffFrequency() {
 		return lpf_cutoffFreq;
 	}	
+
+	FilterType getFilterType() {
+		return lpf_type;
+	}
+
+	float getShelvingGain() {
+		return lpf_shelvingGaindB;
+	}
+
+	float getQualityFactor() {
+		return lpf_Q;
+	}
 
 private:
 

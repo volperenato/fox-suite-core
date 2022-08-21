@@ -4,7 +4,13 @@
 #include "constants.h"
 
 enum class FilterType {
-	Butterworth
+	Butterworth = 0,
+	LinkwitzRiley,
+	Shelving,
+	DigitalFirstOrder,
+	AllPoleFirstOrder,
+	AllPoleMMA,
+	Vicanek
 };
 
 enum class MixMode {

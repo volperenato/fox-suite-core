@@ -81,6 +81,11 @@ public:
 			mcf_DelayLines[i]->setCutoffFrequency(freq);
 	}
 
+	void setFilterType(FilterType type) {
+		for (int i = 0; i < mcf_numberOfChannels; i++)
+			mcf_DelayLines[i]->setFilterType(type);
+	}
+
 	//void processAudio(float* in, float* out) {
 	//	vector<float> houseout(mcf_numberOfChannels);
 	//	vector<float> housein(mcf_numberOfChannels);
@@ -146,13 +151,10 @@ private:
 	}
 
 	void setDelayExponential() {
-		//vector<float> expo(mcf_numberOfChannels);
-		//expo = exponentialVector(mcf_minDelayLength, mcf_maxDelayLength, mcf_numberOfChannels);
-		for (int i = 0; i < mcf_numberOfChannels; i++) {
-			float r = i * 1.0 / mcf_numberOfChannels;
-			mcf_DelayLines[i]->setDelayInmsec(pow(2, r) * mcf_minDelayLength);
-		}
-			//mcf_DelayLines[i]->setDelayInmsec(expo[i]);
+		vector<float> expo(mcf_numberOfChannels);
+		expo = exponentialVector(mcf_minDelayLength, mcf_maxDelayLength, mcf_numberOfChannels);
+		for (int i = 0; i < mcf_numberOfChannels; i++)			
+			mcf_DelayLines[i]->setDelayInmsec(expo[i]);
 	}
 
 };

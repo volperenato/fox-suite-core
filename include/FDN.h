@@ -31,7 +31,8 @@ protected:
 	vector<MultiChannelDelay*> fdn_EarlyReflections;
 	vector<MultiChannelDiffuser*> fdn_Diffuser;
 	MultiChannelFeedback* fdn_Feedback;
-	vector<LowPassFilter*> fdn_LPF;
+	vector<LowPassFilter*> fdn_LPFOutput;
+	vector<LowPassFilter*> fdn_LPFDiffusion;
 
 	// Channel numbers
 	int fdn_inputChannels, fdn_internalChannels, fdn_outputChannels;
@@ -81,6 +82,7 @@ public:
 		deleteEarlyReflBlock();
 		deleteInternalArrays();
 		deleteLowPass();
+		deleteDiffusionLowPassFilters();
 	}	
 
 	// Initialize FDN elements
@@ -94,7 +96,9 @@ public:
 			fdn_EarlyReflections[i]->initDelayLines(diffusionMaximumLength, sampleRate);
 		}
 		for (int i = 0; i < fdn_outputChannels; i++)
-			fdn_LPF[i]->init(sampleRate);
+			fdn_LPFOutput[i]->init(sampleRate);
+		for (int i = 0; i < fdn_internalChannels; i++)
+			fdn_LPFDiffusion[i]->init(sampleRate);
 	}
 
 	// Set the length of delay lines in the diffusion blocks
@@ -140,12 +144,27 @@ public:
 	// Set the damping frequency of the low pass filter in the multi channel feedback loop
 	void setDampingFrequency(float freq) {
 		fdn_Feedback->setDampingFrequency(freq);
+		for (int i = 0; i < fdn_internalChannels; i++)
+			fdn_LPFDiffusion[i]->setCutoffFrequency(freq);
+	}
+
+	// Set Damping low pass filters type
+	void setDampingType(FilterType type) {
+		fdn_Feedback->setFilterType(type);
+		for (int i = 0; i < fdn_internalChannels; i++)
+			fdn_LPFDiffusion[i]->setFilterType(type);
 	}
 
 	// Set output LowPassFilter frequency
 	void setLowPassFrequency(float freq) {
 		for (int i = 0; i < fdn_outputChannels; i++)
-			fdn_LPF[i]->setCutoffFrequency(freq);
+			fdn_LPFOutput[i]->setCutoffFrequency(freq);
+	}
+
+	// Set output low pass filter type
+	void setLowPassType(FilterType type) {
+		for (int i = 0; i < fdn_outputChannels; i++)
+			fdn_LPFOutput[i]->setFilterType(type);
 	}
 
 	// Set the number of input channels
@@ -164,6 +183,19 @@ public:
 		}
 		fdn_Feedback->setNumberOfChannels(fdn_internalChannels);
 		fdn_Mixer->setNumberOfInputChannels(fdn_internalChannels);
+		float freq = fdn_LPFDiffusion[0]->getCutoffFrequency();
+		FilterType type = fdn_LPFDiffusion[0]->getFilterType();
+		float Q = fdn_LPFDiffusion[0]->getQualityFactor();
+		float g = fdn_LPFOutput[0]->getShelvingGain();
+		deleteDiffusionLowPassFilters();
+		constructDiffusionLowPassFilters();
+		for (int i = 0; i < fdn_internalChannels; i++) {
+			fdn_LPFDiffusion[i]->init(fdn_sampleRate);
+			fdn_LPFDiffusion[i]->setCutoffFrequency(freq);
+			fdn_LPFDiffusion[i]->setQualityFactor(Q);
+			fdn_LPFDiffusion[i]->setShelvingGain(g);
+			fdn_LPFDiffusion[i]->setFilterType(type);
+		}
 		deleteInternalArrays();
 		initInternalArrays();
 	}
@@ -175,12 +207,19 @@ public:
 		fdn_Mixer->setNumberOfOutputChannels(fdn_outputChannels);
 
 		// reset number of low pass filters and set back the same freq and sample rate
-		float freq = fdn_LPF[0]->getCutoffFrequency();		
+		float freq = fdn_LPFOutput[0]->getCutoffFrequency();		
+		float g = fdn_LPFOutput[0]->getShelvingGain();
+		float Q = fdn_LPFOutput[0]->getQualityFactor();
+		FilterType type = fdn_LPFOutput[0]->getFilterType();
 		deleteLowPass();
 		constructLowPass();		
-		setLowPassFrequency(freq);
-		for (int i = 0; i < fdn_outputChannels; i++)
-			fdn_LPF[i]->setSampleRate(fdn_sampleRate);
+		for (int i = 0; i < fdn_outputChannels; i++) {
+			fdn_LPFOutput[i]->init(fdn_sampleRate);
+			fdn_LPFOutput[i]->setCutoffFrequency(freq);
+			fdn_LPFOutput[i]->setQualityFactor(Q);
+			fdn_LPFOutput[i]->setShelvingGain(g);
+			fdn_LPFOutput[i]->setFilterType(type);
+		}
 	}
 		
 	// Set the sample rate
@@ -192,7 +231,9 @@ public:
 		}
 		fdn_Feedback->setSampleRate(sampleRate);
 		for (int i = 0; i < fdn_outputChannels; i++)
-			fdn_LPF[i]->setSampleRate(sampleRate);
+			fdn_LPFOutput[i]->setSampleRate(sampleRate);
+		for (int i = 0; i < fdn_internalChannels; i++)
+			fdn_LPFDiffusion[i]->setSampleRate(sampleRate);
 	}	
 
 	// Set output mixing mode
@@ -220,6 +261,10 @@ public:
 			fdn_Diffuser[i]->processAudio(&fdn_tmpDiffuser[0], &fdn_tmpDiffuser[0]);
 		}
 
+		// Apply Low pass filters after diffusion
+		for (int i = 0; i < fdn_internalChannels; i++)
+			fdn_tmpDiffuser[i] = fdn_LPFDiffusion[i]->processAudio(fdn_tmpDiffuser[i]);
+
 		// Send diffused signal into feedback lines
 		fdn_Feedback->processAudio(&fdn_tmpDiffuser[0], &fdn_tmpFeedback[0]);
 
@@ -234,7 +279,7 @@ public:
 
 		// Apply Low Pass filtering
 		for (int i = 0; i < fdn_outputChannels; i++)
-			out[i] = fdn_LPF[i]->processAudio(out[i]);
+			out[i] = fdn_LPFOutput[i]->processAudio(out[i]);
 
 	};
 
@@ -278,7 +323,7 @@ private:
 			fdn_EarlyReflections.push_back(new MultiChannelDelay(fdn_internalChannels));
 
 		constructLowPass();
-
+		constructDiffusionLowPassFilters();
 		initInternalArrays();
 	}	
 
@@ -297,7 +342,13 @@ private:
 	// Construct object for low pass filter (LowPassFilter)
 	void constructLowPass() {
 		for (int i = 0; i < fdn_outputChannels; i++)
-			fdn_LPF.push_back(new LowPassFilter());
+			fdn_LPFOutput.push_back(new LowPassFilter());
+	}
+
+	// Construct object for low pass filter after diffusion (LowPassFilter)
+	void constructDiffusionLowPassFilters() {
+		for (int i = 0; i < fdn_internalChannels; i++)
+			fdn_LPFDiffusion.push_back(new LowPassFilter());
 	}
 
 	// Delete objects used for in&out interfaces (ChannelSplitter and ChannelMixer)
@@ -337,10 +388,19 @@ private:
 
 	// Delete objects used for low pass filter (LowPassFilter)
 	void deleteLowPass() {
-		if (!fdn_LPF.empty()) {
-			for (int i = 0; i < fdn_LPF.size(); i++)
-				delete fdn_LPF[i];
-			fdn_LPF.clear();
+		if (!fdn_LPFOutput.empty()) {
+			for (int i = 0; i < fdn_LPFOutput.size(); i++)
+				delete fdn_LPFOutput[i];
+			fdn_LPFOutput.clear();
+		}
+	}
+
+	// Delete objects used for low pass filter after diffusion (LowPassFilter)
+	void deleteDiffusionLowPassFilters() {
+		if (!fdn_LPFDiffusion.empty()) {
+			for (int i = 0; i < fdn_LPFDiffusion.size(); i++)
+				delete fdn_LPFDiffusion[i];
+			fdn_LPFDiffusion.clear();
 		}
 	}
 
