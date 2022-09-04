@@ -1,62 +1,84 @@
 #pragma once
-#include "MultiChannelDelay.h"
+#include "ModMultiChannelDelay.h"
 #include "Hadamard.h"
 #include "FlipPolarity.h"
 #include "utils.h"
 #include <string>
 
 #define DEFAULT_NUMBER_OF_CHANNELS_MDIFF 4
+#define _DELAY_MAKEUP_GAIN_VALUE 1.5
 
-class MultiChannelDiffuser {
+class ModMultiChannelDiffuser {
 
 protected:
 
 	int mdiff_numberOfChannels;
 	int mdiff_sampleRate;
-	float *mdiff_outMultiChDel, *mdiff_outHadamard;
-	MultiChannelDelay* mdiff_MultiChDelay;
+	float* mdiff_outMultiChDel, * mdiff_outHadamard;
+	ModMultiChannelDelay* mdiff_MultiChDelay;
 	Hadamard* mdiff_Hadamard;
 	FlipPolarity* mdiff_Polarity;
 
 public:
 
-	MultiChannelDiffuser() { 		
+	ModMultiChannelDiffuser() {
 		constructMCDF(DEFAULT_NUMBER_OF_CHANNELS_MDIFF);
 	}
 
-	MultiChannelDiffuser(int numChInt) { 
+	ModMultiChannelDiffuser(int numChInt) {
 		constructMCDF(numChInt);
 	}
 
-	~MultiChannelDiffuser() { 
+	~ModMultiChannelDiffuser() {
 		deleteBlocks();
-		deleteInternalArrays();		
-	}	
-	
+		deleteInternalArrays();
+	}
+
 	void init(float bufferLengthMs, int sampleRate) {
 		mdiff_sampleRate = sampleRate;
 		mdiff_MultiChDelay->initDelayLines(bufferLengthMs, sampleRate);
+		setMakeUpGainDB(_DELAY_MAKEUP_GAIN_VALUE);
 	}
 
-	void setNumberOfInternalChannels(int numChInt) {		
-		mdiff_numberOfChannels = numChInt;		
+	void setNumberOfInternalChannels(int numChInt) {
+		mdiff_numberOfChannels = numChInt;
 		mdiff_MultiChDelay->setNumberOfChannels(numChInt);
-		mdiff_Hadamard->setNumberOfChannels(numChInt);		
+		mdiff_Hadamard->setNumberOfChannels(numChInt);
 		mdiff_Polarity->setNumberOfChannels(numChInt);
-		resetInternalArrays();		
+		resetInternalArrays();
 	}
 
 	void setDelayLinesLength(float minDelayMs, float maxDelayMs, DelayDistribution distr = DelayDistribution::RandomInRange) {
 		mdiff_MultiChDelay->setDelayLinesLength(minDelayMs, maxDelayMs, distr);
 	}
-	
+
 	void setAllDelayLenghtsMs(float* delayLenghts) { mdiff_MultiChDelay->setSpecificDelayLengthsMs(delayLenghts); }
 
-	void setMakeUpGainDB(float* makeUpGains) { mdiff_MultiChDelay->setMakeUpGaindB(makeUpGains); }	
+	void setMakeUpGainDB(float makeUpGain) { mdiff_MultiChDelay->setMakeUpGaindB(makeUpGain); }
 
-	void setSampleRate(int sampleRate) { 
+	void setModDepth(float depth) {
+		mdiff_MultiChDelay->setModDepth(depth);
+	}
+
+	void setModRate(float rate) {
+		mdiff_MultiChDelay->setModRate(rate);
+	}
+
+	void setModValue(float val) {
+		mdiff_MultiChDelay->setModValueInMsec(val);
+	}
+
+	void setOscillatorType(OscillatorType type) {
+		mdiff_MultiChDelay->setOscillatorType(type);
+	}
+
+	void setOscillatorIsUnipolar(bool isUnipolar) {
+		mdiff_MultiChDelay->setOscillatorIsUnipolar(isUnipolar);
+	}
+
+	void setSampleRate(int sampleRate) {
 		mdiff_sampleRate = sampleRate;
-		mdiff_MultiChDelay->setSampleRate(sampleRate); 
+		mdiff_MultiChDelay->setSampleRate(sampleRate);
 	}
 
 	void processAudio(float* in, float* out) {
@@ -77,14 +99,14 @@ private:
 	void initInternalArrays() {
 		int lenghtInBytes = mdiff_numberOfChannels * sizeof(float);
 		mdiff_outMultiChDel = (float*)malloc(lenghtInBytes);
-		mdiff_outHadamard = (float*)malloc(lenghtInBytes);	
+		mdiff_outHadamard = (float*)malloc(lenghtInBytes);
 		memset(mdiff_outMultiChDel, 0, lenghtInBytes);
 		memset(mdiff_outHadamard, 0, lenghtInBytes);
-	}	
+	}
 
 	void resetInternalArrays() {
 		deleteInternalArrays();
-		initInternalArrays();		
+		initInternalArrays();
 	}
 
 	void deleteInternalArrays() {
@@ -101,13 +123,13 @@ private:
 	}
 
 	void deleteBlocks() {
-		delete mdiff_MultiChDelay;			
+		delete mdiff_MultiChDelay;
 		delete mdiff_Hadamard;
 		delete mdiff_Polarity;
 	}
 
 	void constructBlocks() {
-		mdiff_MultiChDelay = new MultiChannelDelay(mdiff_numberOfChannels);
+		mdiff_MultiChDelay = new ModMultiChannelDelay(mdiff_numberOfChannels);
 		mdiff_Hadamard = new Hadamard(mdiff_numberOfChannels);
 		mdiff_Polarity = new FlipPolarity(mdiff_numberOfChannels);
 	}

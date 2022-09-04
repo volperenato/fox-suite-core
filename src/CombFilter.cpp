@@ -21,7 +21,7 @@ void CombFilter::setFeedbackFromDecay(float decayInSeconds) {
 	cf_decayInSeconds = decayInSeconds;
 	
 	// compute comb filter gain module according to given decay value (in seconds)
-	float feedbackModule = pow(10, -3.0 * dly_delayInmsec / (cf_decayInSeconds * 1000.0));
+	float feedbackModule = (cf_decayInSeconds > 0.0) ? pow(10, -3.0 * dly_delayInmsec / (cf_decayInSeconds * 1000.0)) : 0.0;
 
 	// allocate comb filter gain value retaining its sign
 	cf_feedbackGain = cf_feedbackGainSign * feedbackModule;

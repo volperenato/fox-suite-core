@@ -85,7 +85,7 @@ void Delay::updateParameters() {
 	dly_delayInSamples = dly_delayInmsec * (float)dly_sampleRate / 1000.0;
 
 	// protection against sample == 0 and sample greater than allocated memory
-	if (dly_delayInSamples == 0)
+	if (dly_delayInSamples == 0.0)
 		dly_delayInSamples = 1.0;
 	else if (dly_delayInSamples > dly_lineLengthInSamples)
 		dly_delayInSamples = dly_lineLengthInSamples;
@@ -118,11 +118,11 @@ void Delay::setDelayInmsec(float delayInmsec) {
 	// Check that the chosen delay is not higher than allocated one (in milliseconds)
 	if (delayInmsec > dly_lineLengthInmsec)
 		delayInmsec = dly_lineLengthInmsec;
-		//init(delayInmsec, dly_sampleRate);
+	else if (delayInmsec < 0.0)
+		delayInmsec = 0.0;
 
 	// Set delay line length in milliseconds
 	dly_delayInmsec = delayInmsec;
-	//dly_writeIndex = 0;
 
 	// Update parameters based on new delay length
 	updateParameters();

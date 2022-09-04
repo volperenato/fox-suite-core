@@ -18,7 +18,7 @@ public:
 	~LPCombFilter();
 	void init(float maxDelayInmsec, int sampleRate) override;
 	void setCutoffFrequency(float cutoffFreq);
-	void setFilterType(FilterType type);
+	void setFilterType(LPFilterType type);
 	float processLowPass(float xn);
 	virtual float processAudio(float xn) override;
 };

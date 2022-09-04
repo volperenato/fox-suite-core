@@ -1,11 +1,10 @@
 #pragma once
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include "LPFButterworth.h"
 #include "constants.h"
 #include "utils.h"
 
-#define DEFAULT_LOW_PASS_FILTER_TYPE FilterType::Butterworth
+#define DEFAULT_LOW_PASS_FILTER_TYPE LPFilterType::Butterworth
 #define DEFAULT_SHELVING_GAIN -6.0
 #define DEFAULT_RESONANCE 0.707
 
@@ -14,7 +13,7 @@ class LowPassFilter {
 protected:
 
 	// lp filter type
-	FilterType lpf_type;
+	LPFilterType lpf_type;
 
 	// lpf cutoff frequency
 	float lpf_cutoffFreq;
@@ -29,14 +28,14 @@ protected:
 	float lpf_Q;
 
 	// lpf gains
-	float lpf_a0, lpf_a1, lpf_a2, lpf_b1, lpf_b2;
+	float lpf_a0, lpf_a1, lpf_a2, lpf_b1, lpf_b2, lpf_c0;
 
 	// lpf buffers
 	float lpf_xn_1, lpf_xn_2, lpf_yn_1, lpf_yn_2;
 
 public: 
 
-	LowPassFilter(int sampleRate = _TEMPLATE_SAMPLERATE, float freq = MAX_LPF_FREQUENCY, FilterType type = DEFAULT_LOW_PASS_FILTER_TYPE) {
+	LowPassFilter(int sampleRate = _TEMPLATE_SAMPLERATE, float freq = MAX_LPF_FREQUENCY, LPFilterType type = DEFAULT_LOW_PASS_FILTER_TYPE) {
 			lpf_cutoffFreq = freq;
 			lpf_sampleRate = sampleRate;
 			lpf_type = type;
@@ -72,7 +71,7 @@ public:
 		updateGains();
 	}
 
-	void setFilterType(FilterType type) {
+	void setFilterType(LPFilterType type) {
 		// allocate filter type
 		lpf_type = type;
 
@@ -92,7 +91,7 @@ public:
 
 	void updateGains() {
 		switch (lpf_type) {
-		case FilterType::Butterworth: {
+		case LPFilterType::Butterworth: {
 			// define lpf fb and ff gains
 			float C = 1.0 / tan((M_PI * lpf_cutoffFreq) / (float)lpf_sampleRate);
 			lpf_a0 = 1.0 / (1.0 + sqrt(2.0) * C + C * C);
@@ -100,9 +99,10 @@ public:
 			lpf_a2 = lpf_a0;
 			lpf_b1 = 2.0 * lpf_a0 * (1 - C * C);
 			lpf_b2 = lpf_a0 * (1.0 - sqrt(2.0) * C + C * C);
+			lpf_c0 = 1.0;
 			break;
 		}
-		case FilterType::LinkwitzRiley: {
+		case LPFilterType::LinkwitzRiley: {
 			float omegac = M_PI * lpf_cutoffFreq;
 			float thetac = omegac / (float)lpf_sampleRate;
 			float k = omegac / tan(thetac);
@@ -112,9 +112,10 @@ public:
 			lpf_a2 = lpf_a0;
 			lpf_b1 = (-2 * k * k + 2 * omegac * omegac) / delta;
 			lpf_b2 = (-2 * k * omegac + k * k + omegac * omegac) / delta;
+			lpf_c0 = 1.0;
 			break;
 		}
-		case FilterType::Shelving: {
+		case LPFilterType::Shelving: {
 			float thetac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
 			float mi = pow(10.0, lpf_shelvingGaindB / 20.0);
 			float beta = 4.0 / (1.0 + mi);
@@ -125,9 +126,10 @@ public:
 			lpf_a2 = 0.0;
 			lpf_b1 = -gamma;
 			lpf_b2 = 0.0;
+			lpf_c0 = 1.0;// mi - 1.0;
 			break;
 		}
-		case FilterType::DigitalFirstOrder: {
+		case LPFilterType::DigitalFirstOrder: {
 			float thetac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
 			float gamma = cos(thetac) / (1.0 + sin(thetac));
 			lpf_a0 = (1.0 - gamma) / 2.0;
@@ -135,9 +137,10 @@ public:
 			lpf_a2 = 0.0;
 			lpf_b1 = -gamma;
 			lpf_b2 = 0.0;
+			lpf_c0 = 1.0;
 			break;
 		}
-		case FilterType::AllPoleFirstOrder: {
+		case LPFilterType::AllPoleFirstOrder: {
 			float thetac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
 			float gamma = 2.0 - cos(thetac);
 			lpf_b1 = sqrt(gamma * gamma - 1.0) - gamma;
@@ -145,9 +148,10 @@ public:
 			lpf_a1 = 0.0;
 			lpf_a2 = 0.0;
 			lpf_b2 = 0.0;
+			lpf_c0 = 1.0;
 			break;
 		}
-		case FilterType::AllPoleMMA: {
+		case LPFilterType::AllPoleMMA: {
 			float thetac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
 			float resonance;
 			if (lpf_Q <= 0.707)
@@ -161,9 +165,10 @@ public:
 			lpf_a0 = g * (1.0 + lpf_b1 + lpf_b2);
 			lpf_a1 = 0.0;
 			lpf_a2 = 0.0;
+			lpf_c0 = 1.0;
 			break;
 		}
-		case FilterType::Vicanek: {
+		case LPFilterType::Vicanek: {
 			float omegac = 2.0 * M_PI * lpf_cutoffFreq / (float)lpf_sampleRate;
 			float f0 = omegac / M_PI;
 			float q = 1.0 / (2.0 * lpf_Q);
@@ -177,6 +182,7 @@ public:
 			lpf_a0 = (r0 + r1) / 2.0;
 			lpf_a1 = r0 - lpf_a0;
 			lpf_a2 = 0.0;
+			lpf_c0 = 1.0;
 			break;
 		}
 		}		
@@ -196,14 +202,14 @@ public:
 		// update buffers
 		updateBuffers(xn, yn);
 
-		return yn;
+		return lpf_c0 * yn;
 	}
 
 	float getCutoffFrequency() {
 		return lpf_cutoffFreq;
 	}	
 
-	FilterType getFilterType() {
+	LPFilterType getFilterType() {
 		return lpf_type;
 	}
 
@@ -217,7 +223,7 @@ public:
 
 private:
 
-	void constructLPF(int sampleRate = _TEMPLATE_SAMPLERATE, float freq = MAX_LPF_FREQUENCY, FilterType type = DEFAULT_LOW_PASS_FILTER_TYPE) {		
+	void constructLPF(int sampleRate = _TEMPLATE_SAMPLERATE, float freq = MAX_LPF_FREQUENCY, LPFilterType type = DEFAULT_LOW_PASS_FILTER_TYPE) {
 		lpf_cutoffFreq = freq;
 		lpf_sampleRate = sampleRate;
 		lpf_type = type;

@@ -4,7 +4,7 @@
 
 
 LPCombFilter::LPCombFilter() : CombFilter() {
-	lpcf_feedbackLPF = new LowPassFilter();
+	lpcf_feedbackLPF = new LowPassFilter();	
 }
 
 LPCombFilter::~LPCombFilter() {
@@ -17,6 +17,7 @@ void LPCombFilter::init(float maxDelayInmsec, int sampleRate) {
 
 	// initialize LPF
 	lpcf_feedbackLPF->init(sampleRate);
+	setCutoffFrequency(MAX_LPF_FREQUENCY);
 }
 
 void LPCombFilter::setCutoffFrequency(float cutoffFreq) {
@@ -27,7 +28,7 @@ void LPCombFilter::setCutoffFrequency(float cutoffFreq) {
 	lpcf_feedbackLPF->setCutoffFrequency(lpcf_cutoffFreq);
 }
 
-void LPCombFilter::setFilterType(FilterType type) {
+void LPCombFilter::setFilterType(LPFilterType type) {
 	lpcf_feedbackLPF->setFilterType(type);
 }
 

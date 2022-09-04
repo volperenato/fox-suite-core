@@ -13,8 +13,9 @@ Tremolo::~Tremolo() {
 void Tremolo::init(int sampleRate, OscillatorType waveform, float LFOFrequency, float LFOAmplitude)
 {		
 	// init LFO object
-	trem_LFOOscillator->init(waveform, LFOFrequency, sampleRate);
-	
+	trem_LFOOscillator->init(waveform, sampleRate);
+	trem_LFOOscillator->setLFOfrequency(LFOFrequency);
+
 	// Set LFO amplitude	
 	trem_LFOOscillator->setLFOAmplitude(LFOAmplitude);
 
