@@ -113,3 +113,20 @@ inline float parabolicSine(float x) {
 	return y;
 }
 /*--------------------------------------------------------------------*/
+
+/*--------------------------------------------------------------------*/
+inline void WriteBufferToFile(float** buffer, int numSamples, string file)
+{
+	string filename = "E:\\MIS\\tesi\\" + file;
+
+	FILE* f = fopen(filename.c_str(), "a");
+	if (!f) return;
+
+	for (int i = 0; i < numSamples; ++i)
+	{
+		fprintf(f, "%f,%f\n", buffer[0][i], buffer[1][i]);
+	}
+
+	fclose(f);
+}
+/*--------------------------------------------------------------------*/
