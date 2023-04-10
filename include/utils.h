@@ -1,6 +1,8 @@
 #pragma once
 #include <math.h>
 #include <vector>
+#include <string>
+#include <stdlib.h>
 #include "constants.h"
 
 enum class LPFilterType {
@@ -115,9 +117,9 @@ inline float parabolicSine(float x) {
 /*--------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------*/
-inline void WriteBufferToFile(float** buffer, int numSamples, string file)
+inline void WriteBufferToFile(float** buffer, int numSamples, std::string file)
 {
-	string filename = "E:\\MIS\\tesi\\" + file;
+	std::string filename = "E:\\MIS\\tesi\\" + file;
 
 	FILE* f = fopen(filename.c_str(), "a");
 	if (!f) return;
